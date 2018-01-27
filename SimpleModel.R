@@ -5,8 +5,8 @@ install.lib <- load.lib[!load.lib %in% installed.packages()]
 for(lib in install.lib) install.packages(lib,dependences=TRUE)
 sapply(load.lib,require,character=TRUE)
 
-# Set WD, this could be your downloaded repository
-wd = "/Users/manny/Library/Mobile Documents/com~apple~CloudDocs/DataScience@SMU/MSDS_6372/Project_01"
+# Set WD, should be the location of your cloned repository
+wd = "/Users/manny/Desktop/git_repositories/Stats2_Proj1"
 setwd(wd)
 
 data.Train = read.csv("train.csv")
