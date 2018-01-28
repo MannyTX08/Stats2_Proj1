@@ -2,7 +2,7 @@
 # https://github.com/susanli2016/Data-Analysis-with-R/blob/master/Predict-House-Price.Rmd 
 
 # Load necessary packages
-# investigate lars
+# investigate lars 
 load.lib <- c("olsrr","ggplot2")
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
