@@ -13,12 +13,12 @@ sapply(load.lib,require,character=TRUE)
 data.Train = read.csv("train.csv")
 
 # Review simple model of interest
-simpleModel = lm(data = data.Train, SalePrice ~ GrLivArea + OverallCond + OverallQual)
+simpleModel = lm(data = data.Train, SalePrice ~ GrLivArea + OverallCond + OverallQual + Neighborhood)
 par(mfrow=c(2,2)); plot(simpleModel); par(mfrow=c(1,1));
 olsrr::ols_dsrvsp_plot(simpleModel) # Residual plot
 olsrr::ols_rsd_hist(simpleModel)    # Hitogram of residuals with normal curve
 olsrr::ols_rsd_qqplot(simpleModel)  # Normal QQ Plot
-olsrr::ols_cooksd_barplot(logModel) # Cooks D Plot
+olsrr::ols_cooksd_barplot(simpleModel) # Cooks D Plot
 olsrr::ols_rsdlev_plot(simpleModel) # Leverage Plot
 
 # Create transformed data set and remove outliers
@@ -27,7 +27,7 @@ data.Train$log_SalePrice = log(data.Train$SalePrice)
 data.Train$log_OverallCond = log(data.Train$OverallCond)
 data.Train$log_OverallQual = log(data.Train$OverallQual)
 
-logModel = lm(data = data.Train, log_SalePrice ~ log_GrLivArea + OverallCond + OverallQual)
+logModel = lm(data = data.Train, log_SalePrice ~ log_GrLivArea + OverallCond + Neighborhood)
 par(mfrow=c(2,2)); plot(logModel); par(mfrow=c(1,1));
 olsrr::ols_dsrvsp_plot(logModel)    # Residual plot
 olsrr::ols_rsd_hist(logModel)       # Hitogram of residuals with normal curve
@@ -35,9 +35,7 @@ olsrr::ols_rsd_qqplot(logModel)     # Normal QQ Plot
 olsrr::ols_cooksd_barplot(logModel) # Cooks D Plot
 olsrr::ols_rsdlev_plot(logModel)    # Leverage Plot
 
-olsrr::ols_vif_tol(logModel)        # Determine if VIF is appropriate
-
-
+VIF <- olsrr::ols_vif_tol(logModel)        # Determine if VIF is appropriate
 
 ############################ OLD STUFF AFTER HERE ###################################
 ##### Figure 1 #####
