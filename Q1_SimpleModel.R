@@ -2,7 +2,6 @@
 # https://github.com/susanli2016/Data-Analysis-with-R/blob/master/Predict-House-Price.Rmd 
 
 # Load necessary packages
-# investigate lars 
 load.lib <- c("olsrr","ggplot2")
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
@@ -10,8 +9,6 @@ for(lib in install.lib) install.packages(lib,dependences=TRUE)
 sapply(load.lib,require,character=TRUE)
 
 # Set WD, should be the location of your cloned repository
-# wd = "/Users/manny/Desktop/git_repositories/Stats2_Proj1"
-# setwd(wd)
 
 data.Train = read.csv("train.csv")
 
@@ -22,9 +19,17 @@ nullFrame <- subset(nullFrame,nullFrame$NullRatio>0)
 nullFrame <- nullFrame[order(-nullFrame$NullRatio),]
 nullFrame
 
+# Now that we know which columns have multiple Null values, we can omit them from our list
+
+# We have been tasked with providing a simple model to help realty agents and prospective
+# buyers determine a potential sales price of a home given certain variables.
+# This is intended to be easy to measure and interpret, therefore we will use what we believe
+# to be the most important variables concerning a home in general: Gross Living Area,
+# Overall Condition, and Overall Quality.
+
 # Review simple model of interest
 simpleModel = lm(data = data.Train, SalePrice ~ GrLivArea + OverallCond + OverallQual)
-par(mfrow=c(2,2)); plot(simpleModel); par(mfrow=c(1,1));
+par(mfrow=c(2,2)); plot(simpleModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model (need transform on Y)
 olsrr::ols_dsrvsp_plot(simpleModel) # Residual plot
 olsrr::ols_rsd_hist(simpleModel)    # Hitogram of residuals with normal curve
 olsrr::ols_rsd_qqplot(simpleModel)  # Normal QQ Plot
@@ -32,27 +37,60 @@ olsrr::ols_cooksd_barplot(simpleModel) # Cooks D Plot
 olsrr::ols_rsdlev_plot(simpleModel) # Leverage Plot 
 
 # Review combinations of GrLivArea, OverallCond, and OverallQual to find best on key measures
-bestSub <- ols_best_subset(simpleModel)
+bestSub <- olsrr::ols_best_subset(simpleModel)
 bestSub
 plot(bestSub)
-# Resulting model is SalesPrice ~ GrLivArea + OverallQual
+# Resulting model is SalesPrice ~ GrLivArea + OverallQual, OverallCond did not aid the model
+# based on R2 remaining the same, Adj. R2 going down and C(p)/AIC/SBIC/SBC increasing
 simpleModel = lm(data = data.Train, SalePrice ~ GrLivArea + OverallQual)
+par(mfrow=c(2,2)); plot(simpleModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model (need transform on Y)
+olsrr::ols_dsrvsp_plot(simpleModel) # Residual plot
+olsrr::ols_rsd_hist(simpleModel)    # Hitogram of residuals with normal curve
+olsrr::ols_rsd_qqplot(simpleModel)  # Normal QQ Plot
+olsrr::ols_cooksd_barplot(simpleModel) # Cooks D Plot
+olsrr::ols_rsdlev_plot(simpleModel) # Leverage Plot 
 
-# Create transformed data set and remove outliers
-# data.Train$log_GrLivArea = log(data.Train$GrLivArea)
-data.Train$log_SalePrice = log(data.Train$SalePrice)
 
-logModel = lm(data = data.Train, log_SalePrice ~ GrLivArea + OverallQual)
+# Create transformed response variable log(SalePrice) and explanatory variable log(GrLivArea)
+data.Train$SalePrice = log(data.Train$SalePrice)
+data.Train$GrLivArea = log(data.Train$GrLivArea)
+
+logModel = lm(data = data.Train, SalePrice ~ GrLivArea + OverallQual)
 
 par(mfrow=c(2,2)); plot(logModel); par(mfrow=c(1,1));
-olsrr::ols_dsrvsp_plot(logModel)    # Residual plot
+olsrr::ols_dsrvsp_plot(logModel)    # Residual plot (Id = 524 and Id = 1299 may warrant removal)
 olsrr::ols_rsd_hist(logModel)       # Hitogram of residuals with normal curve
 olsrr::ols_rsd_qqplot(logModel)     # Normal QQ Plot
-olsrr::ols_cooksd_barplot(logModel) # Cooks D Plot
+olsrr::ols_cooksd_barplot(logModel) # Cooks D Plot (Id 1299 has highest Cook's, 524 second highest)
 olsrr::ols_rsdlev_plot(logModel)    # Leverage Plot
 
-VIF <- olsrr::ols_vif_tol(simpleModel)        # Determine if VIF is appropriate
-VIF
+# Remove two worst points in data set for model
+data.Train2 = data.Train[data.Train$Id!=1299 & data.Train$Id!=524, ]
+
+logModel2 = lm(data = data.Train2, SalePrice ~ GrLivArea + OverallQual)
+
+par(mfrow=c(2,2)); plot(logModel2); par(mfrow=c(1,1));
+olsrr::ols_dsrvsp_plot(logModel2)    # Residual plot 
+olsrr::ols_rsd_hist(logModel2)       # Hitogram of residuals with normal curve
+olsrr::ols_rsd_qqplot(logModel2)     # Normal QQ Plot
+olsrr::ols_cooksd_barplot(logModel2) # Cooks D Plot (Id 1299 has highest Cook's, 524 second highest)
+olsrr::ols_rsdlev_plot(logModel2)    # Leverage Plot
+
+VIF <- olsrr::ols_vif_tol(logModel2)  # Determine if VIF is appropriate
+VIF # VIF for model is low
+
+# Generate results of logModel2
+summary(logModel2) #R2 = .7642, Adj R2 = .7639 
+confint(logModel2)
+
+# Interpretation here is 
+# log(SalePrice) = 7.66 + .46*log(GrLivArea) + .17*OverallQual
+# 2^.46 = 1.37, so for every doubling of GrLivArea there is a 1.37 increase in median sale price accounting for OverallQual
+# 95% CI [1.336196, 1.408642]
+# Need to see how to interpret OverallQual here...
+# CI needed
+
+
 
 
 
