@@ -1,23 +1,45 @@
 # Load necessary packages
-load.lib <- c("caret","olsrr","ggplot2","car")
+# investigate lars
+load.lib <- c("olsrr","ggplot2")
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
 for(lib in install.lib) install.packages(lib,dependences=TRUE)
 sapply(load.lib,require,character=TRUE)
 
 # Set WD, should be the location of your cloned repository
-wd = "/Users/manny/Desktop/git_repositories/Stats2_Proj1"
-setwd(wd)
+# wd = "/Users/manny/Desktop/git_repositories/Stats2_Proj1"
+# setwd(wd)
 
 data.Train = read.csv("train.csv")
-# Descriptive information of data set (1460 rows, 81 cols, 25 neighborhoods )
-nrow(data.Train) ; ncol(data.Train); length(unique(data.Train$Neighborhood))
-# data.Train = data.Train[data.Train$Neighborhood == "NAmes" | data.Train$Neighborhood == "Edwards" | data.Train$Neighborhood == "BrkSide",]
+
+# Review simple model of interest
+simpleModel = lm(data = data.Train, SalePrice ~ GrLivArea + OverallCond + OverallQual)
+par(mfrow=c(2,2)); plot(simpleModel); par(mfrow=c(1,1));
+olsrr::ols_dsrvsp_plot(simpleModel) # Residual plot
+olsrr::ols_rsd_hist(simpleModel)    # Hitogram of residuals with normal curve
+olsrr::ols_rsd_qqplot(simpleModel)  # Normal QQ Plot
+olsrr::ols_cooksd_barplot(logModel) # Cooks D Plot
+olsrr::ols_rsdlev_plot(simpleModel) # Leverage Plot
 
 # Create transformed data set and remove outliers
 data.Train$log_GrLivArea = log(data.Train$GrLivArea)
 data.Train$log_SalePrice = log(data.Train$SalePrice)
+data.Train$log_OverallCond = log(data.Train$OverallCond)
+data.Train$log_OverallQual = log(data.Train$OverallQual)
 
+logModel = lm(data = data.Train, log_SalePrice ~ log_GrLivArea + OverallCond + OverallQual)
+par(mfrow=c(2,2)); plot(logModel); par(mfrow=c(1,1));
+olsrr::ols_dsrvsp_plot(logModel)    # Residual plot
+olsrr::ols_rsd_hist(logModel)       # Hitogram of residuals with normal curve
+olsrr::ols_rsd_qqplot(logModel)     # Normal QQ Plot
+olsrr::ols_cooksd_barplot(logModel) # Cooks D Plot
+olsrr::ols_rsdlev_plot(logModel)    # Leverage Plot
+
+olsrr::ols_vif_tol(logModel)        # Determine if VIF is appropriate
+
+
+
+############################ OLD STUFF AFTER HERE ###################################
 ##### Figure 1 #####
 # Scatter Plot by Neighborhood (raw data) 
 ggplot(data.Train, aes(y=SalePrice, x = GrLivArea, colour=Neighborhood))+geom_point() +
@@ -83,9 +105,8 @@ model_cent = lm(log_SalePrice ~ I(log_GrLivArea-mean(log_GrLivArea)) + Neighborh
 
 summary(model_cent)
 ##### Table 4 #####
-# car package 
-vif(model_int)
-vif(model_cent)
+olsrr::ols_vif_tol(model_int)
+olsrr::ols_vif_tol(model_cent)
 
 # Log Log model centered (no grouping on Neighborhood)
 # add NAmes Regression Line
