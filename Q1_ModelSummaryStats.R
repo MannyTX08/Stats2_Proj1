@@ -1,3 +1,6 @@
+# This code is used to determine best model for Stats 2 Project 1 Question 1
+# Manuel Rosales
+
 # https://rpubs.com/Ludovicbenistant/HousePrice
 # https://github.com/susanli2016/Data-Analysis-with-R/blob/master/Predict-House-Price.Rmd 
 
