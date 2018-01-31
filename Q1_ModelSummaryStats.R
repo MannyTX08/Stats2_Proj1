@@ -41,18 +41,16 @@ CatColNames = names(CatColumns)
 model.df = data.Train[,c("Id","GrLivArea","SalePrice")]
 model.df = cbind(model.df,CatColumns)
 
-rawSummary = data.frame(Model=as.character(), R2=as.numeric(), AdjR2=numeric(), AIC=numeric(), SBC=numeric()) 
-rawSummary.results = GenerateFitStats(CatColNames,rawSummary) # Call Function For Fit Stats
+dfSummary = data.frame(Model=as.character(), R2=as.numeric(), AdjR2=numeric(), AIC=numeric(), SBC=numeric()) 
+rawSummary = GenerateFitStats(CatColNames,dfSummary) # Call Function For Fit Stats
 
 # Take log of Response to determine fit statistics
 model.df$SalePrice = log(model.df$SalePrice)
-logxSummary = data.frame(Model=as.character(), R2=as.numeric(), AdjR2=numeric(), AIC=numeric(), SBC=numeric()) 
-logxSummary.results = GenerateFitStats(CatColNames,logxSummary) # Call Function For Fit Stats
+logySummary = GenerateFitStats(CatColNames,dfSummary) # Call Function For Fit Stats
 
 # Take log of explanatory continuous varible to determine fit statistics
 model.df$GrLivArea = log(model.df$GrLivArea)
-logxlogySummary= data.frame(Model=as.character(), R2=as.numeric(), AdjR2=numeric(), AIC=numeric(), SBC=numeric()) 
-logxlogySummary.results = GenerateFitStats(CatColNames,logxlogySummary) # Call Function For Fit Stats
+logylogxSummary = GenerateFitStats(CatColNames,dfSummary) # Call Function For Fit Stats
 
 # Review Best Raw Data Model
 BestRawModel = lm(data = data.Train, SalePrice ~ GrLivArea + Neighborhood)
@@ -89,7 +87,7 @@ sum(residuals(cvmodel3$finalModel)^2, na.rm=T) # CV Press = 53.69073
 
 VIF = olsrr::ols_vif_tol(BestlogYlogXModel)  # Determine if VIF is appropriate
 VIF # VIF for model is low
- 
+
 ScatterPlot = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=Neighborhood)) + geom_point() +
    labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
    theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
