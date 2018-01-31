@@ -111,18 +111,11 @@ ScatterByFactor = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea))) + ge
 ScatterPlot
 ScatterByFactor
 
-# MORE WORK HERE
-ScatterPlot+geom_abline(intercept = BestlogYlogXModel$coefficients[1], slope = BestlogYlogXModel$coefficients[2])
-
-ScatterByFactor
-# Need to make df of intercept, slope, and Neighborhood to add lines by facet
-ScatterByFactor + geom_abline(intercept = BestlogYlogXModel$coefficients[1], slope = BestlogYlogXModel$coefficients[2])
-
 ### Needs research
+Intercept=rep(BestlogYlogXModel$coefficients[1],25)
 Slope=rep(BestlogYlogXModel$coefficients[2],25)
 Betas=c(0,BestlogYlogXModel$coefficients[3:26])
-Slope=Slope+Betas
+Intercept=Intercept+Betas
+linesframe = data.frame(Intercept = Intercept, Slope=rep(BestlogYlogXModel$coefficients[2],25),Neighborhood=sort(unique(data.Train$Neighborhood)))
 
-linesframe = data.frame(Intercept = rep(BestlogYlogXModel$coefficients[1],25), Slope=Slope,Neighborhood=sort(unique(data.Train$Neighborhood)))
-ScatterByFactor # + more here
-
+ScatterByFactor + geom_abline(intercept = linesframe$Intercept, slope = linesframe$Slope) # Need to put line in facet
