@@ -92,6 +92,21 @@ print(VIF, n=25) # VIF for model indicates we require means centering (Think thi
 summary(BestlogYlogXModel)$ceofficients
 confint(BestlogYlogXModel)
 
+ParameterCoef=coef(summary(BestlogYlogXModel)) # Capture Coefficients
+
+ResultsFrame=as.data.frame(ParameterCoef) # Place into data frame
+ResultsFrame$Parameter=rownames(ResultsFrame) # Capture names for parameters
+ResultsFrame=ResultsFrame[,c("Parameter","Estimate" , "Std. Error", "t value" , "Pr(>|t|)")] # Re-order columns
+row.names(ResultsFrame)=NULL # Remove row names
+
+ConfIntFrame=as.data.frame(confint(BestlogYlogXModel)) # Capture lower and upper CI (95%)
+ResultsFrame = cbind(ResultsFrame,ConfIntFrame) # Combine information into 1 data frame
+row.names(ResultsFrame)=NULL # Remove row names
+
+ResultsFrame$Significant = ifelse(ResultsFrame[,5]>=.05,"N","Y") # Add Y/N for Statistical Significance at alpha=.05
+ResultsFrame
+
+
 # Scatter plots
 ScatterPlot = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=Neighborhood)) + geom_point() +
    labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
