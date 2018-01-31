@@ -86,7 +86,9 @@ cvmodel3 = caret::train(log(SalePrice) ~ log(GrLivArea) + Neighborhood, data = d
 sum(residuals(cvmodel3$finalModel)^2, na.rm=T) # CV Press = 53.69073
 
 VIF = olsrr::ols_vif_tol(BestlogYlogXModel)  # Determine if VIF is appropriate
-VIF # VIF for model is low
+print(VIF, n=25) # VIF for model indicates we require means centering (Think this just happens on SalePrice and GrLivArea)
+
+# http://www.gastonsanchez.com/visually-enforced/how-to/2014/01/15/Center-data-in-R/
 
 ScatterPlot = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=Neighborhood)) + geom_point() +
    labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
@@ -98,5 +100,6 @@ ScatterByFactor = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea))) + ge
   theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
         axis.text = element_text(size=10), legend.position = "bottom") + facet_wrap( ~ Neighborhood, ncol=5)
   
-ScatterPlot 
+ScatterPlot
+
 ScatterByFactor
