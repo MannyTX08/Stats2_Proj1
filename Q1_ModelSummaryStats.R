@@ -88,15 +88,7 @@ sum(residuals(cvmodel3$finalModel)^2, na.rm=T) # CV Press = 53.69073
 VIF = olsrr::ols_vif_tol(BestlogYlogXModel)  # Determine if VIF is appropriate
 print(VIF, n=25) # VIF for model indicates we require means centering (Think this just happens on SalePrice and GrLivArea)
 
-#########################################
 # http://www.gastonsanchez.com/visually-enforced/how-to/2014/01/15/Center-data-in-R/
-# Trying to center, not reducing VIF...
-data.Train$logSalePrice = log(data.Train$SalePrice)
-data.Train$logGrLivArea = log(data.Train$GrLivArea)
-model_cent = lm(logSalePrice ~ I(logGrLivArea-mean(logGrLivArea)) + Neighborhood, data = data.Train)
-VIF_center = olsrr::ols_vif_tol((model_cent))               
-print(VIF_center, n=25) 
-#########################################
 
 ScatterPlot = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=Neighborhood)) + geom_point() +
    labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
