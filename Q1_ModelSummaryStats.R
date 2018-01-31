@@ -88,18 +88,41 @@ sum(residuals(cvmodel3$finalModel)^2, na.rm=T) # CV Press = 53.69073
 VIF = olsrr::ols_vif_tol(BestlogYlogXModel)  # Determine if VIF is appropriate
 print(VIF, n=25) # VIF for model indicates we require means centering (Think this just happens on SalePrice and GrLivArea)
 
-# http://www.gastonsanchez.com/visually-enforced/how-to/2014/01/15/Center-data-in-R/
+# #########################################
+# # http://www.gastonsanchez.com/visually-enforced/how-to/2014/01/15/Center-data-in-R/
+# # Trying to center, not reducing VIF...
+# data.Train$logSalePrice = log(data.Train$SalePrice)
+# data.Train$logGrLivArea = log(data.Train$GrLivArea)
+# model_cent = lm(logSalePrice ~ I(logGrLivArea-mean(logGrLivArea)) + Neighborhood, data = data.Train)
+# VIF_center = olsrr::ols_vif_tol((model_cent))               
+# print(VIF_center, n=25) 
+# #########################################
 
 ScatterPlot = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=Neighborhood)) + geom_point() +
    labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
    theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
          axis.text = element_text(size=10), legend.position = "bottom") 
 
-ScatterByFactor = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea))) + geom_point() + geom_smooth(method = lm,se = TRUE) +
+ScatterByFactor = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea))) + geom_point() +  
   labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
   theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
         axis.text = element_text(size=10), legend.position = "bottom") + facet_wrap( ~ Neighborhood, ncol=5)
   
 ScatterPlot
+ScatterByFactor
+
+# MORE WORK HERE
+ScatterPlot+geom_abline(intercept = BestlogYlogXModel$coefficients[1], slope = BestlogYlogXModel$coefficients[2])
 
 ScatterByFactor
+# Need to make df of intercept, slope, and Neighborhood to add lines by facet
+ScatterByFactor + geom_abline(intercept = BestlogYlogXModel$coefficients[1], slope = BestlogYlogXModel$coefficients[2])
+
+### Needs research
+Slope=rep(BestlogYlogXModel$coefficients[2],25)
+Betas=c(0,BestlogYlogXModel$coefficients[3:26])
+Slope=Slope+Betas
+
+linesframe = data.frame(Intercept = rep(BestlogYlogXModel$coefficients[1],25), Slope=Slope,Neighborhood=sort(unique(data.Train$Neighborhood)))
+ScatterByFactor # + more here
+
