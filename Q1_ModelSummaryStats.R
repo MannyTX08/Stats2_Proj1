@@ -70,20 +70,22 @@ olsrr::ols_dsrvsp_plot(BestlogYModel)
 olsrr::ols_dsrvsp_plot(BestlogYlogXModel)   
 
 # CV Press Statistic on 10 cross validations
-cvmodel1 = caret::train(SalePrice ~ GrLivArea + Neighborhood, data = data.Train, method = "lm",
+# Comparing top 3 models in log(SalePrice) ~ log(GrLivArea) list
+# Neighborhood still is the winner, rank same as on R2 and Adj R2 basis
+cvmodel1 = caret::train(log(SalePrice) ~ log(GrLivArea) + Neighborhood, data = data.Train, method = "lm",
                        trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
                        na.action = na.omit)
-sum(residuals(cvmodel1$finalModel)^2, na.rm=T) # CV Press = 2.407736e+12
+sum(residuals(cvmodel1$finalModel)^2, na.rm=T) # CV Press = 53.69073
 
-cvmodel2 = caret::train(log(SalePrice) ~ GrLivArea + Neighborhood, data = data.Train, method = "lm",
+cvmodel2 = caret::train(log(SalePrice) ~ log(GrLivArea) + BsmtQual, data = data.Train, method = "lm",
                        trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
                        na.action = na.omit)
-sum(residuals(cvmodel2$finalModel)^2, na.rm=T) # CV Press = 56.1487
+sum(residuals(cvmodel2$finalModel)^2, na.rm=T) # CV Press = 66.63905
 
-cvmodel3 = caret::train(log(SalePrice) ~ log(GrLivArea) + Neighborhood, data = data.Train, method = "lm",
+cvmodel3 = caret::train(log(SalePrice) ~ log(GrLivArea) + ExterQual, data = data.Train, method = "lm",
                        trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
                        na.action = na.omit)
-sum(residuals(cvmodel3$finalModel)^2, na.rm=T) # CV Press = 53.69073
+sum(residuals(cvmodel3$finalModel)^2, na.rm=T) # CV Press = 72.21623
 
 VIF = olsrr::ols_vif_tol(BestlogYlogXModel)  # Determine if VIF is appropriate
 print(VIF, n=25) # VIF for model indicates we require means centering (Think this just happens on SalePrice and GrLivArea)
@@ -106,10 +108,26 @@ row.names(ResultsFrame)=NULL # Remove row names
 ResultsFrame$Significant = ifelse(ResultsFrame[,5]>=.05,"N","Y") # Add Y/N for Statistical Significance at alpha=.05
 ResultsFrame
 
-
 # Scatter plots
+# Raw Data
+ScatterPlot = ggplot(data.Train,aes(y=SalePrice,x=GrLivArea)) + geom_point(color="blue") +
+  labs(title = "SalePrice vs GrLivArea", y="Sales Price ($)", x="Gross Living Area") +
+  theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
+        axis.text = element_text(size=10),legend.position="none") 
+# log(SalePrice)~GrLivArea
+ScatterPlot_logY = ggplot(data.Train,aes(y=log(SalePrice),x=GrLivArea)) + geom_point(color="blue") +
+  labs(title = "log(SalePrice) vs GrLivArea", y="log of Sales Price ($)", x="Gross Living Area") +
+  theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
+        axis.text = element_text(size=10),legend.position="none") 
+# log(SalePrice)~log(GrLivArea)
+ScatterPlot_logYlogX = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea))) + geom_point(color="blue") +
+  labs(title = "log(SalePrice) vs log(GrLivArea)", y="log of Sales Price ($)", x="log of Gross Living Area") +
+  theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
+        axis.text = element_text(size=10),legend.position="none") 
+
+# log/log + Neighborhood
 ScatterPlot = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=Neighborhood)) + geom_point() +
-   labs(title = "log(Sales Price) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
+   labs(title = "log(SalePrice) vs log(Living Area)", y="log of Sales Price ($)", x="log of Gross Living Area") +
    theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
          axis.text = element_text(size=10), legend.position = "right") 
 
@@ -119,6 +137,9 @@ ScatterByFactor = ggplot(data.Train,aes(y=log(SalePrice),x=log(GrLivArea),color=
         axis.text = element_text(size=10), legend.position="none") + facet_wrap( ~ Neighborhood, ncol=5)
   
 ScatterPlot
+ScatterPlot_logY
+ScatterPlot_logYlogX
+
 ScatterByFactor
 
 # Create a data frame of all the intercepts and slopes for each Neighborhood
@@ -129,5 +150,5 @@ Intercept=Intercept+Betas
 linesframe = data.frame(linesIntercept = Intercept, linesSlope=rep(BestlogYlogXModel$coefficients[2],25),
                         Neighborhood=sort(unique(data.Train$Neighborhood)))
 
-# Including individual regression lines
+# Including individual regression lines for each Neighborhood facet
 ScatterByFactor + geom_abline(data = linesframe, aes(intercept = linesIntercept, slope = linesSlope))
