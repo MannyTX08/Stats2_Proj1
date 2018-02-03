@@ -55,16 +55,31 @@ logylogxSummary = GenerateFitStats(CatColNames,dfSummary) # Call Function For Fi
 # Review Best Raw Data Model Residuals
 BestRawModel = lm(data = data.Train, SalePrice ~ GrLivArea + Neighborhood)
 par(mfrow=c(2,2)); plot(BestRawModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model (need transform)
+olsrr::ols_rsd_hist(BestRawModel)
 
 # Review Best log(Y) Model Residuals
 BestlogYModel = lm(data = data.Train, log(SalePrice) ~ GrLivArea + Neighborhood)
 par(mfrow=c(2,2)); plot(BestlogYModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model
+olsrr::ols_rsd_hist(BestlogYModel)
 
 # Review Best log(Y) and log(X) Model Residuals
 BestlogYlogXModel = lm(data = data.Train, log(SalePrice) ~ log(GrLivArea) + Neighborhood)
 par(mfrow=c(2,2)); plot(BestlogYlogXModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model
+olsrr::ols_rsd_hist(BestlogYlogXModel)
+
+# Review Second Best log(Y) and log(X) Model Residuals
+SecBestlogYlogXModel = lm(data = data.Train, log(SalePrice) ~ log(GrLivArea) + BsmtQual)
+par(mfrow=c(2,2)); plot(SecBestlogYlogXModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model
+olsrr::ols_rsd_hist(SecBestlogYlogXModel)
+
+# Review Third Best log(Y) and log(X) Model Residuals
+ThirdBestlogYlogXModel = lm(data = data.Train, log(SalePrice) ~ log(GrLivArea) + ExterQual)
+par(mfrow=c(2,2)); plot(ThirdBestlogYlogXModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model
+olsrr::ols_rsd_hist(ThirdBestlogYlogXModel)
 
 # Generate pretty Residual Plots
 olsrr::ols_dsrvsp_plot(BestRawModel)
 olsrr::ols_dsrvsp_plot(BestlogYModel)   
 olsrr::ols_dsrvsp_plot(BestlogYlogXModel)   
+olsrr::ols_dsrvsp_plot(SecBestlogYlogXModel)   
+olsrr::ols_dsrvsp_plot(ThirdBestlogYlogXModel)   
