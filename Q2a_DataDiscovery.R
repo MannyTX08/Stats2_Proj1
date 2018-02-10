@@ -94,6 +94,9 @@ par(mfrow=c(2,2)); plot(FullModel); par(mfrow=c(1,1)); # Generate base R Residua
 olsrr::ols_rsd_hist(FullModel)
 olsrr::ols_cooksd_chart(FullModel)
 
+###########################################
+# Need to fix past here
+
 # ameliated <- amelia(data.Train,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
 #                                                     "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
 #                                                     "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
@@ -151,73 +154,3 @@ data.Test$SalePrice = exp(data.Test$SalePrice)
 forwardKaggle = data.frame(Id=data.Test2$Id,SalePrice=data.Test2$SalePrice);
 forwardKaggle$SalePrice = na.aggregate(forwardKaggle$SalePrice) #Replace NA with mean of others
 write.csv(forwardKaggle,"ForwardK.csv")
-
-data.Test2$SalePriceBack = NA
-data.Test2$SalePriceBack = predict.lm(object = BackwardFit, newdata = data.Test2)
-data.Test2$SalePriceBack = exp(data.Test2$SalePriceBack)
-backKaggle = data.frame(Id=data.Test2$Id,SalePrice=data.Test2$SalePriceBack);
-backKaggle$SalePrice = na.aggregate(backKaggle$SalePrice) #Replace NA with mean of others
-write.csv(backKaggle,"BackwordK.csv")
-
-data.Test2$SalePriceBoth = NA
-data.Test2$SalePriceBoth = predict.lm(object = BothFit, newdata = data.Test2)
-data.Test2$SalePriceBoth = exp(data.Test2$SalePriceBoth)
-bothKaggle = data.frame(Id=data.Test2$Id,SalePrice=data.Test2$SalePriceBoth);
-bothKaggle$SalePrice = na.aggregate(bothKaggle$SalePrice) #Replace NA with mean of others
-write.csv(bothKaggle,"BothK.csv")
-
-
-##################### OLD STUFF HERE ##########################
-
-
-
-# ##### Custom Model!!!!! #####
-# 
-# CustomModel = as.formula(SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtFinSF1 + LotArea + YearRemodAdd + GarageCars + OverallCond + YearBuilt + SaleCondition + X1stFlrSF + KitchenQual + BsmtFinType1 + Exterior1st + BsmtExposure + MSZoning + Condition1 + BsmtQual + Fireplaces + BsmtFullBath + ScreenPorch + CentralAir + GarageType + ExterCond + PoolArea + Foundation + TotalBsmtSF + HeatingQC + LotConfig + MasVnrArea + BsmtUnfSF + FullBath + HalfBath + KitchenAbvGr + Neighborhood:GrLivArea + OverallQual:GrLivArea, env = new.env() )
-# 
-# Custom = lm(CustomModel, data = data.Train2, na.action = na.exclude)
-# summary(Custom) # Adj R2 = .9402
-# 
-# modelCustom = data.Train(CustomModel, data = data.Train2, method = "lm",
-#                     trControl = data.TrainControl(method = "cv", number = 10,verboseIter = TRUE),
-#                     na.action = na.omit
-#                     )
-# 
-# sum(residuals(modelCustom$finalModel)^2, na.rm=T) # CV Press = 12.47733
-# 
-# data.Test2$SalePriceCust = NA
-# data.Test2$SalePriceCust = predict.lm(object = Custom, newdata = data.Test2)
-# data.Test2$SalePriceCust = exp(data.Test2$SalePriceCust)
-# customKaggle = data.frame(Id=data.Test2$Id,SalePrice=data.Test2$SalePriceCust);
-# customKaggle$SalePrice = na.aggregate(customKaggle$SalePrice) #Replace NA with mean of others
-# write.csv(customKaggle,"CustomK.csv")
-
-# data.Train$SalePrice =  ifelse(data.Train$SalePrice ==0,0 ,log(data.Train$SalePrice))
-# data.Train$GrLivArea = ifelse(data.Train$GrLivArea ==0,0 ,log(data.Train$GrLivArea/100))
-# data.Train$LotArea = ifelse(data.Train$LotArea ==0,0 ,log(data.Train$LotArea))
-# data.Train$BsmtFinSF1 = ifelse(data.Train$BsmtFinSF1 ==0,0 ,log(data.Train$BsmtFinSF1))
-# data.Train$BsmtFinSF2 = ifelse(data.Train$BsmtFinSF2 ==0,0 ,log(data.Train$BsmtFinSF2))
-# data.Train$BsmtUnfSF = ifelse(data.Train$BsmtUnfSF ==0,0 ,log(data.Train$BsmtUnfSF))
-# data.Train$TotalBsmtSF = ifelse(data.Train$TotalBsmtSF ==0,0 ,log(data.Train$TotalBsmtSF))
-# data.Train$X1stFlrSF = ifelse(data.Train$X1stFlrSF ==0,0 ,log(data.Train$X1stFlrSF))
-# data.Train$X2ndFlrSF = ifelse(data.Train$X2ndFlrSF ==0,0 ,log(data.Train$X2ndFlrSF))
-# data.Train$GarageArea = ifelse(data.Train$GarageArea ==0,0 ,log(data.Train$GarageArea))
-# data.Train$EnclosedPorch = ifelse(data.Train$EnclosedPorch ==0,0 ,log(data.Train$EnclosedPorch))
-# data.Train$X3SsnPorch = ifelse(data.Train$X3SsnPorch ==0,0 ,log(data.Train$X3SsnPorch))
-# data.Train$ScreenPorch = ifelse(data.Train$ScreenPorch ==0,0 ,log(data.Train$ScreenPorch))
-
-##### Apply Same Transofrmations to data.Test Data #####
-
-# data.Test$SalePrice =  ifelse(data.Test$SalePrice ==0,0 ,log(data.Test$SalePrice))
-# data.Test$GrLivArea = ifelse(data.Test$GrLivArea ==0,0 ,log(data.Test$GrLivArea/100))
-# data.Test$LotArea = ifelse(data.Test$LotArea ==0,0 ,log(data.Test$LotArea))
-# data.Test$BsmtFinSF1 = ifelse(data.Test$BsmtFinSF1 ==0,0 ,log(data.Test$BsmtFinSF1))
-# data.Test$BsmtFinSF2 = ifelse(data.Test$BsmtFinSF2 ==0,0 ,log(data.Test$BsmtFinSF2))
-# data.Test$BsmtUnfSF = ifelse(data.Test$BsmtUnfSF ==0,0 ,log(data.Test$BsmtUnfSF))
-# data.Test$TotalBsmtSF = ifelse(data.Test$TotalBsmtSF ==0,0 ,log(data.Test$TotalBsmtSF))
-# data.Test$X1stFlrSF = ifelse(data.Test$X1stFlrSF ==0,0 ,log(data.Test$X1stFlrSF))
-# data.Test$X2ndFlrSF = ifelse(data.Test$X2ndFlrSF ==0,0 ,log(data.Test$X2ndFlrSF))
-# data.Test$GarageArea = ifelse(data.Test$GarageArea ==0,0 ,log(data.Test$GarageArea))
-# data.Test$EnclosedPorch = ifelse(data.Test$EnclosedPorch ==0,0 ,log(data.Test$EnclosedPorch))
-# data.Test$X3SsnPorch = ifelse(data.Test$X3SsnPorch ==0,0 ,log(data.Test$X3SsnPorch))
-# data.Test$ScreenPorch = ifelse(data.Test$ScreenPorch ==0,0 ,log(data.Test$ScreenPorch))
