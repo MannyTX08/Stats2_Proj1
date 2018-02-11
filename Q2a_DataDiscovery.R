@@ -24,7 +24,7 @@ CatColumns = data.Train[,sapply(data.Train,is.factor)]
 # See which Categorical Variables are largely null
 CatNullCols = as.data.frame(sapply(CatColumns, function(x) sum(is.na(x))))
 colnames(CatNullCols) = c("Nulls")
-CatNullCols$NullPerc = round(CatNullCols$Nulls/length(data.Train),2)
+CatNullCols$NullPerc = round(CatNullCols$Nulls/nrow(data.Train),3)
 CatNullCols = CatNullCols[order(-CatNullCols$Nulls),]
 CatNullCols = subset(CatNullCols, CatNullCols$Nulls > 0)
 CatNullCols$Varialbe = rep("Categorical",times = nrow(CatNullCols))
@@ -34,16 +34,17 @@ ConColumns = data.Train[,sapply(data.Train,is.numeric)]
 # See which Continuous Variables are largely null
 ConNullCols = as.data.frame(sapply(ConColumns, function(x) sum(is.na(x))))
 colnames(ConNullCols) = c("Nulls")
-ConNullCols$NullPerc = round(ConNullCols$Nulls/length(data.Train),2)
+ConNullCols$NullPerc = round(ConNullCols$Nulls/nrow(data.Train),3)
 ConNullCols = ConNullCols[order(-ConNullCols$Nulls),]
 ConNullCols = subset(ConNullCols, ConNullCols$Nulls > 0)
 ConNullCols$Varialbe = rep("Continuous",times = nrow(ConNullCols))
 
 NAframe = rbind(CatNullCols, ConNullCols)
 NAframe = NAframe[order(-NAframe$Nulls),]
+NAframe
 
 # Remove columns with > 10% NA's
-NAframe = subset(NAframe, NAframe$NullPerc > 10)
+NAframe = subset(NAframe, NAframe$NullPerc > .10)
 
 ColsToRemove = rownames(NAframe)
 
@@ -97,13 +98,13 @@ olsrr::ols_cooksd_chart(FullModel)
 ###########################################
 # Need to fix past here
 
-# ameliated <- amelia(data.Train,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
-#                                                     "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
-#                                                     "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
-#                                                     "BsmtExposure", "BsmtFinType1", "HeatingQC", 
-#                                                     "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
-#                                                     "SaleCondition"))
-# 
+ ameliated <- amelia(data.Train,m=1, p2s=1, noms = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
+                                                     "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
+                                                     "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
+                                                     "BsmtExposure", "BsmtFinType1", "HeatingQC", 
+                                                     "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
+                                                     "SaleCondition"))
+ 
 # write.amelia(obj=ameliated, file.stem="data.Train1") #names it something else, wierd.
 # data.Train2 <- read.csv("data.Train31.csv")
 # data.Train2$X = NULL #Remove column that duplicates Id
