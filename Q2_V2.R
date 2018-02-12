@@ -81,14 +81,6 @@ ForwardFormula ="SalePrice~"
 ForwardFormula = paste0(ForwardFormula,paste(k$predictors,collapse = "+")) # Capture model predictor variables
 stepForward = as.formula(ForwardFormula, env = new.env()) # Pass model predictors into new object
 
-# Formula backward variable sel
-# ols_stepaic_backward(VSsteps, details = T)
-# stepBack = as.formula(SalePrice ~ MSSubClass + MSZoning + LotArea + LotConfig + Neighborhood + Condition1 + OverallQual + OverallCond + YearBuilt + YearRemodAdd + Exterior1st + MasVnrType + MasVnrArea + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinSF1 + BsmtUnfSF + TotalBsmtSF + HeatingQC + CentralAir + X1stFlrSF + GrLivArea + BsmtFullBath + FullBath + HalfBath + KitchenAbvGr + KitchenQual + Fireplaces + GarageType + GarageCars + EnclosedPorch + ScreenPorch + PoolArea + SaleCondition, env = new.env())
-# 
-# # Formula both, stepwise variable sel
-# ols_stepaic_both(VSsteps, details = T)
-# stepBoth = as.formula(SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtFinSF1 + LotArea + YearRemodAdd + GarageCars + OverallCond + YearBuilt + SaleCondition + X1stFlrSF + KitchenQual + BsmtFinType1 + Exterior1st + BsmtExposure + MSZoning + Condition1 + BsmtQual + Fireplaces + BsmtFullBath + ScreenPorch + CentralAir + GarageType + ExterCond + PoolArea + Foundation + TotalBsmtSF + HeatingQC + LotConfig + MasVnrArea + BsmtUnfSF + FullBath + HalfBath + KitchenAbvGr , env = new.env() )
-
 ForwardFit = lm(stepForward, data = train2, na.action = na.exclude)
 summary(ForwardFit) # Adj R2 = .9402
 
@@ -100,25 +92,6 @@ modelForwardSelection = train(stepForward, data = train2, method = "lm",
 
 sum(residuals(modelForwardSelection$finalModel)^2, na.rm=T) # CV Press = 12.29009
 
-
-# BackwardFit = lm(stepBack, data = train2, na.action = na.exclude)
-# summary(BackwardFit) # Adj R2 = .9402
-
-# modelBackwardSelection = train(stepBack, data = train2, method = "lm",
-#                                trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
-#                                na.action = na.omit
-# )
-# sum(residuals(modelBackwardSelection$finalModel)^2, na.rm=T) # CV Press = 12.31205
-# 
-# BothFit = lm(stepBoth, data = train2, na.action = na.exclude)
-# summary(BothFit) # Adj R2 = .9399
-
-# modelBothSelection = train(stepBoth, data = train2, method = "lm",
-#                            trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
-#                            na.action = na.omit
-# )
-# sum(residuals(modelBothSelection$finalModel)^2, na.rm=T) # CV Press = 12.4287
-
 ##### Kaggle Exports #####
 test2$SalePrice = NA
 test2$SalePrice = predict.lm(object = ForwardFit, newdata = test2)
@@ -126,16 +99,16 @@ test2$SalePrice = exp(test2$SalePrice)
 forwardKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePrice);
 write.csv(forwardKaggle,"ForwardK.csv", row.names = FALSE)
 
-test2$SalePriceBack = NA
-test2$SalePriceBack = predict.lm(object = BackwardFit, newdata = test2)
-test2$SalePriceBack = exp(test2$SalePriceBack)
-backKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBack);
-backKaggle$SalePrice = na.aggregate(backKaggle$SalePrice) #Replace NA with mean of others
-write.csv(backKaggle,"BackwordK.csv")
-
-test2$SalePriceBoth = NA
-test2$SalePriceBoth = predict.lm(object = BothFit, newdata = test2)
-test2$SalePriceBoth = exp(test2$SalePriceBoth)
-bothKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBoth);
-bothKaggle$SalePrice = na.aggregate(bothKaggle$SalePrice) #Replace NA with mean of others
-write.csv(bothKaggle,"BothK.csv")
+# test2$SalePriceBack = NA
+# test2$SalePriceBack = predict.lm(object = BackwardFit, newdata = test2)
+# test2$SalePriceBack = exp(test2$SalePriceBack)
+# backKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBack);
+# backKaggle$SalePrice = na.aggregate(backKaggle$SalePrice) #Replace NA with mean of others
+# write.csv(backKaggle,"BackwordK.csv")
+# 
+# test2$SalePriceBoth = NA
+# test2$SalePriceBoth = predict.lm(object = BothFit, newdata = test2)
+# test2$SalePriceBoth = exp(test2$SalePriceBoth)
+# bothKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBoth);
+# bothKaggle$SalePrice = na.aggregate(bothKaggle$SalePrice) #Replace NA with mean of others
+# write.csv(bothKaggle,"BothK.csv")
