@@ -19,7 +19,7 @@ LogColsFunc = function(x,y){
 data.Train = read.csv("train.csv")
 data.Test = read.csv("test.csv")
 
-# Determine Categorical Variables
+# Determine colunms with factors
 CatColumns = data.Train[,sapply(data.Train,is.factor)]
 # See which Categorical Variables are largely null
 CatNullCols = as.data.frame(sapply(CatColumns, function(x) sum(is.na(x))))
@@ -27,9 +27,8 @@ colnames(CatNullCols) = c("Nulls")
 CatNullCols$NullPerc = round(CatNullCols$Nulls/nrow(data.Train),3)
 CatNullCols = CatNullCols[order(-CatNullCols$Nulls),]
 CatNullCols = subset(CatNullCols, CatNullCols$Nulls > 0)
-CatNullCols$Varialbe = rep("Categorical",times = nrow(CatNullCols))
 
-# Determine Continuous Variables
+# Determine remaining columns
 ConColumns = data.Train[,sapply(data.Train,is.numeric)]
 # See which Continuous Variables are largely null
 ConNullCols = as.data.frame(sapply(ConColumns, function(x) sum(is.na(x))))
@@ -37,7 +36,6 @@ colnames(ConNullCols) = c("Nulls")
 ConNullCols$NullPerc = round(ConNullCols$Nulls/nrow(data.Train),3)
 ConNullCols = ConNullCols[order(-ConNullCols$Nulls),]
 ConNullCols = subset(ConNullCols, ConNullCols$Nulls > 0)
-ConNullCols$Varialbe = rep("Continuous",times = nrow(ConNullCols))
 
 NAframe = rbind(CatNullCols, ConNullCols)
 NAframe = NAframe[order(-NAframe$Nulls),]
@@ -54,13 +52,17 @@ names(LowLevels) = "Levels"
 LowLevels = subset(LowLevels,LowLevels$Levels==2)
 
 ColsToRemove2 = rownames(LowLevels)
-
+ColsToRemove2 = ColsToRemove2[1:3] # Keeping CentralAir
 ColsToRemove = c(ColsToRemove,ColsToRemove2)
 
 for (cols in ColsToRemove) {
   data.Train[,cols] = NULL
   data.Test[,cols] = NULL
 }
+
+# Plot model prior to log transformations
+FullModel = lm(data=data.Train, SalePrice ~ .) 
+par(mfrow=c(2,2)); plot(FullModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model
 
 # Apply Log Transform on Columns that are trully continuous
 
@@ -74,11 +76,6 @@ ColsToLogTest = c('BsmtFinSF1','BsmtFinSF2','BsmtUnfSF','EnclosedPorch','GarageA
 data.Train = LogColsFunc(ColsToLogTrain,data.Train)
 
 data.Test = LogColsFunc(ColsToLogTest,data.Test)
-
-ggplot(data.Train, aes(y=SalePrice, x = GrLivArea, colour=Neighborhood))+geom_point() +
-  labs(title = "Sales Price vs Living Area", y="Sales Price ($)", x="Gross Living Area") +
-  theme(axis.title=element_text(size=14,face="bold"), title=element_text(size=14,face="bold"), 
-        axis.text = element_text(size=10), legend.position = "bottom")
 
 FullModel = lm(data=data.Train, SalePrice ~ .) 
 par(mfrow=c(2,2)); plot(FullModel); par(mfrow=c(1,1)); # Generate base R Residual plot on model
@@ -98,27 +95,25 @@ olsrr::ols_cooksd_chart(FullModel)
 ###########################################
 # Need to fix past here
 
- ameliated <- amelia(data.Train,m=1, p2s=1, noms = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
-                                                     "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
-                                                     "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
-                                                     "BsmtExposure", "BsmtFinType1", "HeatingQC", 
-                                                     "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
-                                                     "SaleCondition"))
+ameliated <- amelia(data.Train,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1","BldgType", "HouseStyle",
+                                               "RoofStyle", "Exterior1st", "Exterior2nd","MasVnrType", "ExterQual", "ExterCond", 
+                                               "Foundation", "BsmtQual", "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical",
+                                               "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", "LandContour", "LandSlope", "Condition2",
+                                               "RoofMatl","SaleCondition","BsmtCond","BsmtFinType2","Heating","Functional","GarageQual","GarageCond"))
  
-# write.amelia(obj=ameliated, file.stem="data.Train1") #names it something else, wierd.
-# data.Train2 <- read.csv("data.Train31.csv")
-# data.Train2$X = NULL #Remove column that duplicates Id
-# 
-# ameliated2 <- amelia(data.Test,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
-#                                                     "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
-#                                                     "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
-#                                                     "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical", 
-#                                                     "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
-#                                                     "SaleCondition"))
-# 
-# write.amelia(obj=ameliated2, file.stem="data.Test3") #names it something else, wierd.
-# data.Test2 <- read.csv("data.Test31.csv")
-# data.Test2$X = NULL #Remove column that duplicates Id
+write.amelia(obj=ameliated, file.stem="amelia.Train") # Package adds 1 at the end for imputation number.
+data.Train2 <- read.csv("amelia.Train1.csv")
+data.Train2$X = NULL #Remove column that duplicates Id
+ 
+ameliated2 <- amelia(data.Test,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1","BldgType", "HouseStyle",
+                                                    "RoofStyle", "Exterior1st", "Exterior2nd","MasVnrType", "ExterQual", "ExterCond", 
+                                                    "Foundation", "BsmtQual", "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical",
+                                                    "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", "LandContour", "LandSlope", "Condition2",
+                                                    "RoofMatl","SaleCondition","BsmtCond","BsmtFinType2","Heating","Functional","GarageQual","GarageCond"))
+ 
+write.amelia(obj=ameliated2, file.stem="amelia.Test") # Package adds 1 at the end for imputation number.
+data.Test2 <- read.csv("amelia.Test1.csv")
+data.Test2$X = NULL #Remove column that duplicates Id
 
 # Fit full model on all remaining variables and data points
 VSsteps = lm(SalePrice ~ . , data = data.Train)
@@ -127,16 +122,21 @@ par(mfrow=c(2,2)); plot(VSsteps)
 par(mfrow=c(1,1)); ols_rsd_hist(VSsteps)
 
 # Formula forward variable sel
-k <- ols_stepaic_forward(VSsteps, details = T)
-plot(k) # Plot generates the AIC step chart, it stops when AIC is no longer dropping (I think)
-stepForward = as.formula( SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtFinSF1 + GarageCars + OverallCond + HouseStyle + YearBuilt + LotArea + RoofMatl + SaleCondition + KitchenQual + Functional + MSZoning + KitchenAbvGr + Condition1 + GarageCond + Exterior1st + Foundation + BsmtFullBath + Fireplaces + LandSlope + TotalBsmtSF + BsmtQual + BsmtExposure + GarageQual + PoolArea + YearRemodAdd + LotConfig + LowQualFinSF + HeatingQC + WoodDeckSF + ScreenPorch + SaleType + BsmtUnfSF + BsmtFinType1 + ExterCond + BldgType + X2ndFlrSF + GarageArea + EnclosedPorch + TotRmsAbvGrd + PavedDrive + HalfBath + FullBath  , env = new.env())
+k <- ols_stepaic_forward(VSsteps, detail=TRUE)
+plot(k) # Plot generates the AIC step chart, it stops when AIC is no longer dropping
+
+# Build Formula for train using resulting predictor variables
+ForwardFormula ="SalePrice~"
+ForwardFormula = paste0(ForwardFormula,paste(k$predictors,collapse = "+"))
+
+stepForward = as.formula(ForwardFormula, env = new.env())
 
 # Formula backward variable sel
-ols_stepaic_backward(VSsteps, details = T)
-stepBack = as.formula(SalePrice ~ MSSubClass + MSZoning + LotArea + LotConfig + Neighborhood + Condition1 + OverallQual + OverallCond + YearBuilt + YearRemodAdd + Exterior1st + MasVnrType + MasVnrArea + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinSF1 + BsmtUnfSF + TotalBsmtSF + HeatingQC + CentralAir + X1stFlrSF + GrLivArea + BsmtFullBath + FullBath + HalfBath + KitchenAbvGr + KitchenQual + Fireplaces + GarageType + GarageCars + EnclosedPorch + ScreenPorch + PoolArea + SaleCondition, env = new.env())
+#ols_stepaic_backward(VSsteps, details = T)
+#stepBack = as.formula(SalePrice ~ MSSubClass + MSZoning + LotArea + LotConfig + Neighborhood + Condition1 + OverallQual + OverallCond + YearBuilt + YearRemodAdd + Exterior1st + MasVnrType + MasVnrArea + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinSF1 + BsmtUnfSF + TotalBsmtSF + HeatingQC + CentralAir + X1stFlrSF + GrLivArea + BsmtFullBath + FullBath + HalfBath + KitchenAbvGr + KitchenQual + Fireplaces + GarageType + GarageCars + EnclosedPorch + ScreenPorch + PoolArea + SaleCondition, env = new.env())
 
 ForwardFit = lm(stepForward, data = data.Train, na.action = na.exclude)
-summary(ForwardFit) # Adj R2 = .9474
+summary(ForwardFit) # Adj R2 = .9483
 
 ##### Cross Validation #####
 modelForwardSelection = caret::train(stepForward, data = data.Train, method = "lm",
@@ -144,13 +144,21 @@ modelForwardSelection = caret::train(stepForward, data = data.Train, method = "l
                                    na.action = na.omit
 )
 
-modelForwardSelection$finalModel
-summary(modelForwardSelection) # Adjusted R2 = .9474
-sum(residuals(modelForwardSelection$finalModel)^2, na.rm=T) # CV Press = 8.8126
+# modelForwardSelection$finalModel
+summary(modelForwardSelection) # Adjusted R2 = .9483
+sum(residuals(modelForwardSelection$finalModel)^2, na.rm=T) # CV Press = 8.5914
 
 ##### Kaggle Exports #####
 data.Test$SalePrice = NA
-data.Test$SalePrice = predict.lm(object = ForwardFit, newdata = data.Test)
+data.Test$SalePrice = predict(object = ForwardFit, newdata = data.Test) 
+data.Test$SalePrice = exp(data.Test$SalePrice)
+forwardKaggle = data.frame(Id=data.Test2$Id,SalePrice=data.Test2$SalePrice);
+forwardKaggle$SalePrice = na.aggregate(forwardKaggle$SalePrice) #Replace NA with mean of others
+write.csv(forwardKaggle,"ForwardK.csv")
+
+
+data.Test2$SalePrice = NA
+data.Test2$SalePrice = predict(object = ForwardFit, newdata = data.Test2) 
 data.Test$SalePrice = exp(data.Test$SalePrice)
 forwardKaggle = data.frame(Id=data.Test2$Id,SalePrice=data.Test2$SalePrice);
 forwardKaggle$SalePrice = na.aggregate(forwardKaggle$SalePrice) #Replace NA with mean of others

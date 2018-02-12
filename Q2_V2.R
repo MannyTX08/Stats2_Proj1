@@ -1,0 +1,146 @@
+# Load necessary packages
+load.lib = c("olsrr","ggplot2","caret","Amelia")
+
+install.lib = load.lib[!load.lib %in% installed.packages()]
+for(lib in install.lib){
+  install.packages(lib,dependences=TRUE)
+} 
+
+sapply(load.lib,require,character=TRUE)
+
+# Function for log transformation on muliple columns
+# if value is 0 leave 0
+LogColsFunc = function(x,y){
+  for(i in 1:length(x)){
+    y[,x[i]] =  ifelse(y[,x[i]] == 0,0 ,log(y[,x[i]]))
+  }
+  return(y) 
+}
+
+# Load data
+train = read.csv("train.csv")
+test = read.csv("test.csv")
+
+# Review full model with all variables (more than likely way overfitted :0)  
+FullDataSetModel = lm(SalePrice~.,data = train)
+par(mfrow=c(2,2)); plot(FullDataSetModel)
+par(mfrow=c(1,1)); 
+
+# Remove columns that hurt variable selection process
+ColsToRemove = c("Alley","PoolQC","Fence","FireplaceQu","OpenPorchSF","WoodDeckSF","Street",
+                 "LandContour","LandSlope","Condition2","RoofMatl","BsmtCond","BsmtFinType2",
+                 "Heating","Functional","GarageQual","GarageCond","MiscFeature","Utilities")
+
+for (cols in ColsToRemove) {
+  train[,cols] = NULL
+  test[,cols] = NULL
+}
+
+# Apply log Transformation on Key Columns
+ColsToLog.train = c('BsmtFinSF1','BsmtFinSF2','BsmtUnfSF','EnclosedPorch','GarageArea','GrLivArea',
+                    'LotArea','LowQualFinSF','MasVnrArea','MiscVal','PoolArea','SalePrice',
+                    'ScreenPorch','TotalBsmtSF','X1stFlrSF','X2ndFlrSF','X3SsnPorch')
+ColsToLog.test = c('BsmtFinSF1','BsmtFinSF2','BsmtUnfSF','EnclosedPorch','GarageArea','GrLivArea',
+                    'LotArea','LowQualFinSF','MasVnrArea','MiscVal','PoolArea',
+                    'ScreenPorch','TotalBsmtSF','X1stFlrSF','X2ndFlrSF','X3SsnPorch')
+
+train = LogColsFunc(ColsToLog.train,train)
+test = LogColsFunc(ColsToLog.test,test)
+
+# Delte points deamed outliers that effect model
+train = train[train$Id!=1299 & train$Id!=524 & train$Id!=1183 & 
+                train$Id!=692 & train$Id!=589 & train$Id!=1325 & 
+                train$Id!=463 & train$Id!=633 & train$Id!=31 & train$Id!=1433,]
+
+ameliated <- amelia(train,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
+                                               "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
+                                               "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
+                                               "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical", 
+                                               "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
+                                               "SaleCondition"))
+
+write.amelia(obj=ameliated, file.stem="train2") #names it something else, wierd.
+train2 <- read.csv("train21.csv")
+train2$X = NULL #Remove column that duplicates Id
+
+ameliated2 <- amelia(test,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
+                                               "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
+                                               "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
+                                               "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical", 
+                                               "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
+                                               "SaleCondition"))
+
+write.amelia(obj=ameliated2, file.stem="test2") #names it something else, wierd.
+test2 <- read.csv("test21.csv")
+test2$X = NULL #Remove column that duplicates Id
+
+# Fit full model on all remaining variables and data points
+VSsteps = lm(SalePrice ~ . , data = train2)
+
+par(mfrow=c(2,2)); plot(VSsteps)
+par(mfrow=c(1,1)); ols_rsd_hist(VSsteps)
+
+# Formula forward variable sel
+k = ols_stepaic_forward(VSsteps, details = T)
+ForwardFormula ="SalePrice~"
+ForwardFormula = paste0(ForwardFormula,paste(k$predictors,collapse = "+")) # Capture model predictor variables
+stepForward = as.formula(ForwardFormula, env = new.env()) # Pass model predictors into new object
+
+# Formula backward variable sel
+# ols_stepaic_backward(VSsteps, details = T)
+# stepBack = as.formula(SalePrice ~ MSSubClass + MSZoning + LotArea + LotConfig + Neighborhood + Condition1 + OverallQual + OverallCond + YearBuilt + YearRemodAdd + Exterior1st + MasVnrType + MasVnrArea + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinSF1 + BsmtUnfSF + TotalBsmtSF + HeatingQC + CentralAir + X1stFlrSF + GrLivArea + BsmtFullBath + FullBath + HalfBath + KitchenAbvGr + KitchenQual + Fireplaces + GarageType + GarageCars + EnclosedPorch + ScreenPorch + PoolArea + SaleCondition, env = new.env())
+# 
+# # Formula both, stepwise variable sel
+# ols_stepaic_both(VSsteps, details = T)
+# stepBoth = as.formula(SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtFinSF1 + LotArea + YearRemodAdd + GarageCars + OverallCond + YearBuilt + SaleCondition + X1stFlrSF + KitchenQual + BsmtFinType1 + Exterior1st + BsmtExposure + MSZoning + Condition1 + BsmtQual + Fireplaces + BsmtFullBath + ScreenPorch + CentralAir + GarageType + ExterCond + PoolArea + Foundation + TotalBsmtSF + HeatingQC + LotConfig + MasVnrArea + BsmtUnfSF + FullBath + HalfBath + KitchenAbvGr , env = new.env() )
+
+ForwardFit = lm(stepForward, data = train2, na.action = na.exclude)
+summary(ForwardFit) # Adj R2 = .9402
+
+##### Cross Validation #####
+modelForwardSelection = train(stepForward, data = train2, method = "lm",
+                              trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
+                              na.action = na.omit
+)
+
+sum(residuals(modelForwardSelection$finalModel)^2, na.rm=T) # CV Press = 12.29009
+
+
+# BackwardFit = lm(stepBack, data = train2, na.action = na.exclude)
+# summary(BackwardFit) # Adj R2 = .9402
+
+# modelBackwardSelection = train(stepBack, data = train2, method = "lm",
+#                                trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
+#                                na.action = na.omit
+# )
+# sum(residuals(modelBackwardSelection$finalModel)^2, na.rm=T) # CV Press = 12.31205
+# 
+# BothFit = lm(stepBoth, data = train2, na.action = na.exclude)
+# summary(BothFit) # Adj R2 = .9399
+
+# modelBothSelection = train(stepBoth, data = train2, method = "lm",
+#                            trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
+#                            na.action = na.omit
+# )
+# sum(residuals(modelBothSelection$finalModel)^2, na.rm=T) # CV Press = 12.4287
+
+##### Kaggle Exports #####
+test2$SalePrice = NA
+test2$SalePrice = predict.lm(object = ForwardFit, newdata = test2)
+test2$SalePrice = exp(test2$SalePrice)
+forwardKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePrice);
+write.csv(forwardKaggle,"ForwardK.csv", row.names = FALSE)
+
+test2$SalePriceBack = NA
+test2$SalePriceBack = predict.lm(object = BackwardFit, newdata = test2)
+test2$SalePriceBack = exp(test2$SalePriceBack)
+backKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBack);
+backKaggle$SalePrice = na.aggregate(backKaggle$SalePrice) #Replace NA with mean of others
+write.csv(backKaggle,"BackwordK.csv")
+
+test2$SalePriceBoth = NA
+test2$SalePriceBoth = predict.lm(object = BothFit, newdata = test2)
+test2$SalePriceBoth = exp(test2$SalePriceBoth)
+bothKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBoth);
+bothKaggle$SalePrice = na.aggregate(bothKaggle$SalePrice) #Replace NA with mean of others
+write.csv(bothKaggle,"BothK.csv")
