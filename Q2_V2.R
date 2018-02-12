@@ -48,27 +48,22 @@ train = LogColsFunc(ColsToLog.train,train)
 test = LogColsFunc(ColsToLog.test,test)
 
 # Delte points deamed outliers that effect model
-train = train[train$Id!=1299 & train$Id!=524 & train$Id!=1183 & 
-                train$Id!=692 & train$Id!=589 & train$Id!=1325 & 
-                train$Id!=463 & train$Id!=633 & train$Id!=31 & train$Id!=1433,]
+outliers = c(1299, 524, 1183, 692, 589, 1325, 463, 633, 31, 1433)
+train = train[!(train$Id %in% outliers), ]
 
-ameliated <- amelia(train,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
-                                               "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
-                                               "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
-                                               "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical", 
-                                               "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
-                                               "SaleCondition"))
+ordinalcols = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1","BldgType", "HouseStyle", 
+                "RoofStyle", "Exterior1st", "Exterior2nd","MasVnrType", "ExterQual", "ExterCond", "Foundation", 
+                "BsmtQual","BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical", "KitchenQual", 
+                "GarageType", "GarageFinish", "PavedDrive", "SaleType","SaleCondition")
+
+# Imputation for missing values on train and test
+ameliated <- amelia(train,m=1, p2s=1, ords = ordinalcols)
 
 write.amelia(obj=ameliated, file.stem="train2") #names it something else, wierd.
 train2 <- read.csv("train21.csv")
 train2$X = NULL #Remove column that duplicates Id
 
-ameliated2 <- amelia(test,m=1, p2s=1, ords = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1", 
-                                               "BldgType", "HouseStyle", "RoofStyle", "Exterior1st", "Exterior2nd", 
-                                               "MasVnrType", "ExterQual", "ExterCond", "Foundation", "BsmtQual", 
-                                               "BsmtExposure", "BsmtFinType1", "HeatingQC", "CentralAir", "Electrical", 
-                                               "KitchenQual", "GarageType", "GarageFinish", "PavedDrive", "SaleType", 
-                                               "SaleCondition"))
+ameliated2 <- amelia(test,m=1, p2s=1, ords = ordinalcols)
 
 write.amelia(obj=ameliated2, file.stem="test2") #names it something else, wierd.
 test2 <- read.csv("test21.csv")
