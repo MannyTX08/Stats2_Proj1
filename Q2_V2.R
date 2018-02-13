@@ -21,11 +21,6 @@ LogColsFunc = function(x,y){
 train = read.csv("train.csv")
 test = read.csv("test.csv")
 
-# Review full model with all variables (more than likely way overfitted :0)  
-FullDataSetModel = lm(SalePrice~.,data = train)
-par(mfrow=c(2,2)); plot(FullDataSetModel)
-par(mfrow=c(1,1)); 
-
 # Remove columns that hurt variable selection process
 ColsToRemove = c("Alley","PoolQC","Fence","FireplaceQu","OpenPorchSF","WoodDeckSF","Street",
                  "LandContour","LandSlope","Condition2","RoofMatl","BsmtCond","BsmtFinType2",
@@ -35,6 +30,11 @@ for (cols in ColsToRemove) {
   train[,cols] = NULL
   test[,cols] = NULL
 }
+
+# Review full model with remaining variables (prior to log transformations)  
+FullDataSetModel = lm(SalePrice~.,data = train)
+par(mfrow=c(2,2)); plot(FullDataSetModel)
+par(mfrow=c(1,1)); 
 
 # Apply log Transformation on Key Columns
 ColsToLog.train = c('BsmtFinSF1','BsmtFinSF2','BsmtUnfSF','EnclosedPorch','GarageArea','GrLivArea',
@@ -47,9 +47,20 @@ ColsToLog.test = c('BsmtFinSF1','BsmtFinSF2','BsmtUnfSF','EnclosedPorch','Garage
 train = LogColsFunc(ColsToLog.train,train)
 test = LogColsFunc(ColsToLog.test,test)
 
+
+# Review full model with remaining variables (after log transformations) 
+FullDataSetModel = lm(SalePrice~.,data = train)
+par(mfrow=c(2,2)); plot(FullDataSetModel)
+par(mfrow=c(1,1)); 
+
 # Delte points deamed outliers that effect model
 outliers = c(1299, 524, 1183, 692, 589, 1325, 463, 633, 31, 1433)
 train = train[!(train$Id %in% outliers), ]
+
+# Review full model with remaining variables (after log transformations) 
+FullDataSetModel = lm(SalePrice~.,data = train)
+par(mfrow=c(2,2)); plot(FullDataSetModel)
+par(mfrow=c(1,1)); 
 
 ordinalcols = c("MSZoning", "LotShape", "LotConfig", "Neighborhood", "Condition1","BldgType", "HouseStyle", 
                 "RoofStyle", "Exterior1st", "Exterior2nd","MasVnrType", "ExterQual", "ExterCond", "Foundation", 
@@ -72,17 +83,15 @@ test2$X = NULL #Remove column that duplicates Id
 # Fit full model on all remaining variables and data points
 VSsteps = lm(SalePrice ~ . , data = train2)
 
-par(mfrow=c(2,2)); plot(VSsteps)
-par(mfrow=c(1,1)); ols_rsd_hist(VSsteps)
-
-# Formula forward variable sel
-k = ols_stepaic_forward(VSsteps, details = T)
+####################
+# Formula Forward Stepwise Variable Selection via AIC
+k = ols_stepaic_forward(VSsteps, details = T) # AIC = -2568.171
 ForwardFormula ="SalePrice~"
 ForwardFormula = paste0(ForwardFormula,paste(k$predictors,collapse = "+")) # Capture model predictor variables
 stepForward = as.formula(ForwardFormula, env = new.env()) # Pass model predictors into new object
 
 ForwardFit = lm(stepForward, data = train2, na.action = na.exclude)
-summary(ForwardFit) # Adj R2 = .9402
+summary(ForwardFit) # Adj R2 = .9407
 
 ##### Cross Validation #####
 modelForwardSelection = train(stepForward, data = train2, method = "lm",
@@ -90,25 +99,95 @@ modelForwardSelection = train(stepForward, data = train2, method = "lm",
                               na.action = na.omit
 )
 
-sum(residuals(modelForwardSelection$finalModel)^2, na.rm=T) # CV Press = 12.29009
+sum(residuals(modelForwardSelection$finalModel)^2, na.rm=T) # CV Press = 12.12315
 
-##### Kaggle Exports #####
+##### Kaggle Export #####
+##### Score = .12140 #####
 test2$SalePrice = NA
 test2$SalePrice = predict.lm(object = ForwardFit, newdata = test2)
 test2$SalePrice = exp(test2$SalePrice)
 forwardKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePrice);
 write.csv(forwardKaggle,"ForwardK.csv", row.names = FALSE)
 
-# test2$SalePriceBack = NA
-# test2$SalePriceBack = predict.lm(object = BackwardFit, newdata = test2)
-# test2$SalePriceBack = exp(test2$SalePriceBack)
-# backKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBack);
-# backKaggle$SalePrice = na.aggregate(backKaggle$SalePrice) #Replace NA with mean of others
-# write.csv(backKaggle,"BackwordK.csv")
-# 
-# test2$SalePriceBoth = NA
-# test2$SalePriceBoth = predict.lm(object = BothFit, newdata = test2)
-# test2$SalePriceBoth = exp(test2$SalePriceBoth)
-# bothKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBoth);
-# bothKaggle$SalePrice = na.aggregate(bothKaggle$SalePrice) #Replace NA with mean of others
-# write.csv(bothKaggle,"BothK.csv")
+####################
+# Both  Stepwise Variable Selection via AIC
+k2 = ols_stepaic_both(VSsteps, details = T) # AIC = -2568.171
+BothFormula ="SalePrice~"
+BothFormula = paste0(BothFormula,paste(k2$predictors,collapse = "+")) # Capture model predictor variables
+stepBoth = as.formula(BothFormula, env = new.env()) # Pass model predictors into new object
+
+BothFit = lm(stepBoth, data = train2, na.action = na.exclude)
+summary(BothFit) # Adj R2 = .9407
+
+##### Cross Validation #####
+modelBothSelection = train(stepBoth, data = train2, method = "lm",
+                              trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
+                              na.action = na.omit
+)
+
+sum(residuals(modelBothSelection$finalModel)^2, na.rm=T) # CV Press = 12.12315
+
+##### Kaggle Export #####
+##### Score = .12446 #####
+test2$SalePriceBoth = NA
+test2$SalePriceBoth = predict.lm(object = BothFit, newdata = test2)
+test2$SalePriceBoth = exp(test2$SalePriceBoth)
+bothKaggle = data.frame(Id=test2$Id,SalePrice=test2$SalePriceBoth);
+write.csv(bothKaggle,"BothK.csv", row.names = FALSE)
+
+############ LASSO ATTEMPT ###########
+
+# Convert all factor string columns into integers for LASSO
+train3 = train2
+test3 = test2
+
+ColsToConvert = c("MSZoning","LotShape","LotConfig","Neighborhood","Condition1","BldgType","HouseStyle","RoofStyle",
+                  "Exterior1st","Exterior2nd","MasVnrType","ExterQual","ExterCond","Foundation","BsmtQual",
+                  "BsmtExposure","BsmtFinType1","HeatingQC","CentralAir","Electrical","KitchenQual","GarageType",
+                  "GarageFinish","PavedDrive","SaleType","SaleCondition")
+
+for (cols in ColsToConvert) {
+  train3[,cols] = as.factor(train3[,cols])
+  levels(train3[,cols]) = 1:length(levels(train3[,cols]))
+  train3[,cols] = as.numeric(train3[,cols])
+  test3[,cols] = as.factor(test3[,cols])
+  levels(test3[,cols]) = 1:length(levels(test3[,cols]))
+  test3[,cols] = as.numeric(test3[,cols])
+}
+
+x = model.matrix(SalePrice~.,data=train3)
+x=x[,-1] # Remove the intercept
+
+glmnet1 = cv.glmnet(x=x,y=train3$SalePrice, type.measure='mse', nfolds = 10, alpha=1) # alpha = 1 for LASSO
+co = coef(glmnet1, s = "lambda.1se")
+inds = which(co!=0)
+variables = row.names(co)[inds]
+variables = variables[!(variables %in% '(Intercept)')]
+variables # Get variables selected from LASSO in cv.glmnet
+plot(glmnet1)
+glmnet1$lambda.min # 0.001466091
+glmnet1$lambda.1se # 0.008586923
+
+LASSOformula =as.formula(SalePrice ~ MSZoning + LotArea + OverallQual + OverallCond + YearBuilt + YearRemodAdd + 
+                           ExterQual + Foundation + BsmtQual + BsmtExposure + BsmtFinSF1+ TotalBsmtSF + HeatingQC + 
+                           CentralAir + X1stFlrSF + GrLivArea + BsmtFullBath + KitchenAbvGr + KitchenQual + Fireplaces + 
+                           GarageCars + GarageArea + PavedDrive + ScreenPorch + SaleCondition, env = new.env())
+
+LASSOfit = lm(LASSOformula, data = train3, na.action = na.exclude)
+summary(LASSOfit) # Adj R2 = .9175
+
+##### Cross Validation #####
+modelLASSO = train(LASSOformula, data = train3, method = "lm",
+                           trControl = trainControl(method = "cv", number = 10,verboseIter = TRUE),
+                           na.action = na.omit
+)
+
+sum(residuals(modelLASSO$finalModel)^2, na.rm=T) # CV Press = 18.15048
+
+##### Kaggle Export #####
+##### Score = .12629 #####
+test3$SalePriceLASSO = NA
+test3$SalePriceLASSO = predict.lm(object = LASSOfit, newdata = test3)
+test3$SalePriceLASSO = exp(test3$SalePriceLASSO)
+LASSOKaggle = data.frame(Id=test3$Id,SalePrice=test3$SalePriceLASSO);
+write.csv(LASSOKaggle,"LASSOK.csv", row.names = FALSE)
