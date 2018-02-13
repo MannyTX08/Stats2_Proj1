@@ -159,6 +159,15 @@ x = model.matrix(SalePrice~.,data=train3)
 x=x[,-1] # Remove the intercept
 
 glmnet1 = cv.glmnet(x=x,y=train3$SalePrice, type.measure='mse', nfolds = 10, alpha=1) # alpha = 1 for LASSO
+# Get AIC From LASSO
+# https://stats.stackexchange.com/questions/25817/is-it-possible-to-calculate-aic-and-bic-for-lasso-regression-models
+fit = glmnet(x=x, y=train3$SalePrice)
+tLL = fit$nulldev -deviance(fit)
+k_new = fit$df
+n = fit$nobs
+AICc = -tLL+2*k_new+2*k_new*(k_new+1)/(n-k_new-1)
+AICc #-164.2074
+
 co = coef(glmnet1, s = "lambda.1se")
 inds = which(co!=0)
 variables = row.names(co)[inds]
