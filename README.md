@@ -5,6 +5,7 @@ The following files are in this directory:
 * Q1a_DataDiscovery.R: contains code to review the data and models
 * Q2b_FinalModel.R: review of the final model (estimates, CI's, and VIF's)
 * Q1c_Grahpics.R: graphics for review and report
+* Q2_InsaneMode: contains code to generate forward, step wise, and LASSO variable selection
 * test.csv: test data set
 * train.csv: train data set
 * logSalePriceVSlogGrLivAreaANDNeighborhood.csv: csv with results for Question 1 log log model
